@@ -1,6 +1,6 @@
 account_id: ""
 actions:
-  gp-v2/conditionalsmartorders:
+  Swapr/swapr:
     runtime: v1
     sources: actions
     specs:
@@ -16,7 +16,6 @@ actions:
               # ConditionalOrderCreated
               - network: 
                 - 1
-                - 5
                 - 100
                 status: success
                 logEmitted:
@@ -30,7 +29,6 @@ actions:
           block:
             network:
               - 1
-              - 5
               - 100
             blocks: 5
 project_slug: ""

@@ -20,6 +20,7 @@
     "build:actions": "cd actions && npm ci && yarn run build",
     "lint:actions": "eslint && prettier --check ./actions",
     "test:actions": "yarn build:actions && ts-node actions/test/test_register.ts",
-    "check-deployment": "yarn build:actions && ts-node actions/test/run_local.ts"
+    "check-deployment": "yarn build:actions && ts-node actions/test/run_local.ts",
+    "build:contracts": "forge build"
   }
 }
