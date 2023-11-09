@@ -4,7 +4,7 @@ import axios from "axios";
 import { OrderKind } from "@cowprotocol/contracts";
 import { ethers } from "ethers";
 import { abi } from "./artifacts/ConditionalOrder.json";
-import { Registry } from "./register";
+import { Registry } from "./registry";
 
 export const checkForAndPlaceOrder: ActionFn = async (
   context: Context,
@@ -13,6 +13,9 @@ export const checkForAndPlaceOrder: ActionFn = async (
   const blockEvent = event as BlockEvent;
   const registry = await Registry.load(context, blockEvent.network);
   const chainContext = await ChainContext.create(context, blockEvent.network);
+
+  const contractsToDelete = []
+
   for (const contract_address of registry.contracts) {
     console.log(`Checking ${contract_address}`);
     const contract = new ethers.Contract(
@@ -26,15 +29,37 @@ export const checkForAndPlaceOrder: ActionFn = async (
         "getTradeableOrder()",
         [Array.from(order)]
       );
-      console.log(`Placing Order: ${order}`);
-      await placeOrder(
-        { ...order, from: contract_address, signature },
-        chainContext.api_url
-      );
-    } catch (e) {
+
+      const orderIsValid = order.validTo * 1000 > new Date().getTime()
+
+      if (orderIsValid) {
+        console.log(`Placing Order: ${order}`);
+        await placeOrder(
+          { ...order, from: contract_address, signature },
+          chainContext.api_url
+        );
+      } else {        
+        console.log(`Invalid order: validTo (${order.validTo}) is in the past `)
+      }
+    } catch (e: any) {
       console.log(`Not tradeable (${e})`);
+      if (e.code === "CALL_EXCEPTION") {
+        contractsToDelete.push(contract_address)
+      }
     }
   }
+
+  for (const contract_address of contractsToDelete) {
+    const contractIndex = registry.contracts.findIndex((existing: string) => existing == contract_address);
+    if (contractIndex >= 0) {
+      registry.contracts.splice(contractIndex, 1);
+      console.log(`Removing contract ${contract_address}`);
+    }
+  }
+  if(contractsToDelete.length > 0) {
+    registry.write();
+  }
+
 };
 
 async function placeOrder(order: any, api_url: string) {

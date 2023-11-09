@@ -1,6 +1,6 @@
 import { TestBlockEvent, TestRuntime } from "@tenderly/actions-test";
 import { checkForAndPlaceOrder } from "../watch";
-import { Registry } from "../register";
+import { Registry } from "../registry";
 import { ethers } from "ethers";
 
 const main = async () => {

@@ -4,7 +4,8 @@ import {
   TestRuntime,
 } from "@tenderly/actions-test";
 import { strict as assert } from "node:assert";
-import { addContract, storageKey } from "../register";
+import { addContract } from "../register";
+import { storageKey } from "../registry";
 
 const main = async () => {
   const testRuntime = new TestRuntime();

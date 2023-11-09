@@ -3,11 +3,11 @@ import {
   Context,
   Event,
   TransactionEvent,
-  Storage,
 } from "@tenderly/actions";
 
 import { ethers } from "ethers";
 import { abi } from "./artifacts/ConditionalOrder.json";
+import { Registry } from "./registry";
 
 export const addContract: ActionFn = async (context: Context, event: Event) => {
   const transactionEvent = event as TransactionEvent;
@@ -35,33 +35,3 @@ export const addContract: ActionFn = async (context: Context, event: Event) => {
   console.log(`Updated registry: ${JSON.stringify(registry.contracts)}`);
   await registry.write();
 };
-
-export const storageKey = (network: string): string => {
-  return `CONDITIONAL_ORDER_REGISTRY_${network}`;
-};
-
-export class Registry {
-  contracts: string[];
-  storage: Storage;
-  network: string;
-
-  constructor(contracts: string[], storage: Storage, network: string) {
-    this.contracts = contracts;
-    this.storage = storage;
-    this.network = network;
-  }
-
-  public static async load(
-    context: Context,
-    network: string
-  ): Promise<Registry> {
-    const registry = await context.storage.getJson(storageKey(network));
-    return new Registry(registry.contracts || [], context.storage, network);
-  }
-
-  public async write() {
-    await this.storage.putJson(storageKey(this.network), {
-      contracts: this.contracts,
-    });
-  }
-}
