@@ -1,6 +1,6 @@
 account_id: ""
 actions:
-  berteotti/project:
+  Swapr/swapr:
     runtime: v1
     sources: actions
     specs:

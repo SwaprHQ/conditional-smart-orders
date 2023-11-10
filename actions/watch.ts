@@ -25,18 +25,18 @@ export const checkForAndPlaceOrder: ActionFn = async (
     );
     try {
       const [isCancelled, endTime]: [string, string] = await Promise.allSettled([contract.cancelled(), contract.endTime()]).then(([cancelledResult, endTimeResult])=> {
-        if(cancelledResult.status === "rejected" || endTimeResult.status === "rejected") {
+        if (cancelledResult.status === "rejected" || endTimeResult.status === "rejected") {
           throw "Rejected result"
         }
 
         return [cancelledResult.value, endTimeResult.value]
       })
 
-      //Give it a few more 15 minutes so it reproduces the last order
+      // Give it a few more 15 minutes so it reproduces the last order
       const _15_MINUTES = 900
-      const endTimeIsValid = (parseInt(endTime, 10) + _15_MINUTES) * 1000 > new Date().getTime()
+      const contractEndTimeIsPast = (parseInt(endTime, 10) + _15_MINUTES) * 1000 > new Date().getTime()
 
-      if (!Boolean(isCancelled) && endTimeIsValid) {
+      if (!Boolean(isCancelled) && contractEndTimeIsPast) {
         const order = await contract.getTradeableOrder();
         const signature = contract.interface.encodeFunctionResult(
           "getTradeableOrder()",
