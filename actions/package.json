@@ -2,7 +2,7 @@
   "name": "actions",
   "license": "MIT",
   "scripts": {
-    "build": "mkdir -p artifacts && cp ../out/ConditionalOrder.sol/ConditionalOrder.json artifacts/ && tsc",
+    "build": "mkdir -p artifacts && cp ../out/DCAOrder.sol/DCAOrder.json artifacts/ && tsc",
     "test": "ts-node test/test_register.ts"
   },
   "devDependencies": {

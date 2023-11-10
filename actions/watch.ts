@@ -3,7 +3,7 @@ import { ActionFn, BlockEvent, Context, Event } from "@tenderly/actions";
 import axios from "axios";
 import { OrderKind } from "@cowprotocol/contracts";
 import { ethers } from "ethers";
-import { abi } from "./artifacts/ConditionalOrder.json";
+import { abi } from "./artifacts/DCAOrder.json"
 import { Registry } from "./registry";
 
 export const checkForAndPlaceOrder: ActionFn = async (
@@ -14,7 +14,7 @@ export const checkForAndPlaceOrder: ActionFn = async (
   const registry = await Registry.load(context, blockEvent.network);
   const chainContext = await ChainContext.create(context, blockEvent.network);
 
-  const contractsToDelete = []
+  const contractsToDelete: string[] = []
 
   for (const contract_address of registry.contracts) {
     console.log(`Checking ${contract_address}`);
@@ -24,28 +24,42 @@ export const checkForAndPlaceOrder: ActionFn = async (
       chainContext.provider
     );
     try {
-      const order = await contract.getTradeableOrder();
-      const signature = contract.interface.encodeFunctionResult(
-        "getTradeableOrder()",
-        [Array.from(order)]
-      );
+      const [isCancelled, endTime]: [string, string] = await Promise.allSettled([contract.cancelled(), contract.endTime()]).then(([cancelledResult, endTimeResult])=> {
+        if(cancelledResult.status === "rejected" || endTimeResult.status === "rejected") {
+          throw "Rejected result"
+        }
 
-      const orderIsValid = order.validTo * 1000 > new Date().getTime()
+        return [cancelledResult.value, endTimeResult.value]
+      })
 
-      if (orderIsValid) {
-        console.log(`Placing Order: ${order}`);
-        await placeOrder(
-          { ...order, from: contract_address, signature },
-          chainContext.api_url
+      //Give it a few more 15 minutes so it reproduces the last order
+      const _15_MINUTES = 900
+      const endTimeIsValid = (parseInt(endTime, 10) + _15_MINUTES) * 1000 > new Date().getTime()
+
+      if (!Boolean(isCancelled) && endTimeIsValid) {
+        const order = await contract.getTradeableOrder();
+        const signature = contract.interface.encodeFunctionResult(
+          "getTradeableOrder()",
+          [Array.from(order)]
         );
-      } else {        
-        console.log(`Invalid order: validTo (${order.validTo}) is in the past `)
+
+        const orderIsValid = parseInt(order.validTo, 10) * 1000 > new Date().getTime()
+
+        if (orderIsValid) {
+          console.log(`Placing Order: ${order}`);
+          await placeOrder(
+            { ...order, from: contract_address, signature },
+            chainContext.api_url
+          );
+        } else {        
+          console.log(`Invalid order: validTo (${order.validTo}) is in the past `)
+        }
+      } else {
+        console.log(`Invalid contract: isCancelled (${isCancelled}) or endTime (${endTime}) not valid `)
       }
+
     } catch (e: any) {
       console.log(`Not tradeable (${e})`);
-      if (e.code === "CALL_EXCEPTION") {
-        contractsToDelete.push(contract_address)
-      }
     }
   }
 
