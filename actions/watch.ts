@@ -14,8 +14,6 @@ export const checkForAndPlaceOrder: ActionFn = async (
   const registry = await Registry.load(context, blockEvent.network);
   const chainContext = await ChainContext.create(context, blockEvent.network);
 
-  const contractsToDelete: string[] = []
-
   for (const contract_address of registry.contracts) {
     console.log(`Checking ${contract_address}`);
     const contract = new ethers.Contract(
@@ -24,56 +22,27 @@ export const checkForAndPlaceOrder: ActionFn = async (
       chainContext.provider
     );
     try {
-      const [isCancelled, endTime]: [string, string] = await Promise.allSettled([contract.cancelled(), contract.endTime()]).then(([cancelledResult, endTimeResult])=> {
-        if (cancelledResult.status === "rejected" || endTimeResult.status === "rejected") {
-          throw "Rejected result"
-        }
+      const order = await contract.getTradeableOrder();
+      const signature = contract.interface.encodeFunctionResult(
+        "getTradeableOrder()",
+        [Array.from(order)]
+      );
 
-        return [cancelledResult.value, endTimeResult.value]
-      })
+      const orderIsValid = parseInt(order.validTo, 10) * 1000 > new Date().getTime()
 
-      // Give it a few more 15 minutes so it reproduces the last order
-      const _15_MINUTES = 900
-      const contractEndTimeIsPast = (parseInt(endTime, 10) + _15_MINUTES) * 1000 > new Date().getTime()
-
-      if (!Boolean(isCancelled) && contractEndTimeIsPast) {
-        const order = await contract.getTradeableOrder();
-        const signature = contract.interface.encodeFunctionResult(
-          "getTradeableOrder()",
-          [Array.from(order)]
+      if (orderIsValid) {
+        console.log(`Placing Order: ${order}`);
+        await placeOrder(
+          { ...order, from: contract_address, signature },
+          chainContext.api_url
         );
-
-        const orderIsValid = parseInt(order.validTo, 10) * 1000 > new Date().getTime()
-
-        if (orderIsValid) {
-          console.log(`Placing Order: ${order}`);
-          await placeOrder(
-            { ...order, from: contract_address, signature },
-            chainContext.api_url
-          );
-        } else {        
-          console.log(`Invalid order: validTo (${order.validTo}) is in the past `)
-        }
-      } else {
-        console.log(`Invalid contract: isCancelled (${isCancelled}) or endTime (${endTime}) not valid `)
+      } else {        
+        console.log(`Invalid order: validTo (${order.validTo}) is in the past `)
       }
-
     } catch (e: any) {
       console.log(`Not tradeable (${e})`);
     }
   }
-
-  for (const contract_address of contractsToDelete) {
-    const contractIndex = registry.contracts.findIndex((existing: string) => existing == contract_address);
-    if (contractIndex >= 0) {
-      registry.contracts.splice(contractIndex, 1);
-      console.log(`Removing contract ${contract_address}`);
-    }
-  }
-  if(contractsToDelete.length > 0) {
-    registry.write();
-  }
-
 };
 
 async function placeOrder(order: any, api_url: string) {
@@ -132,7 +101,7 @@ function orderKind(order: any): OrderKind {
   throw "Unexpected order kind";
 }
 
-class ChainContext {
+export class ChainContext {
   provider: ethers.providers.Provider;
   api_url: string;
 

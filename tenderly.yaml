@@ -31,4 +31,15 @@ actions:
               - 1
               - 100
             blocks: 5
+            watch_orders:
+      unregister_orders:
+        description: Checks on every block if the registered smart order contract has finished
+        function: unregister:removeContract
+        trigger:
+          type: block
+          block:
+            network:
+              - 1
+              - 100
+            blocks: 10
 project_slug: ""
