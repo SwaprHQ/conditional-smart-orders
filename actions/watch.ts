@@ -3,7 +3,7 @@ import { ActionFn, BlockEvent, Context, Event } from "@tenderly/actions";
 import axios from "axios";
 import { OrderKind } from "@cowprotocol/contracts";
 import { ethers } from "ethers";
-import { abi } from "./artifacts/ConditionalOrder.json";
+import { abi } from "./artifacts/DCAOrder.json"
 import { Registry } from "./registry";
 
 export const checkForAndPlaceOrder: ActionFn = async (
@@ -13,8 +13,6 @@ export const checkForAndPlaceOrder: ActionFn = async (
   const blockEvent = event as BlockEvent;
   const registry = await Registry.load(context, blockEvent.network);
   const chainContext = await ChainContext.create(context, blockEvent.network);
-
-  const contractsToDelete = []
 
   for (const contract_address of registry.contracts) {
     console.log(`Checking ${contract_address}`);
@@ -30,7 +28,7 @@ export const checkForAndPlaceOrder: ActionFn = async (
         [Array.from(order)]
       );
 
-      const orderIsValid = order.validTo * 1000 > new Date().getTime()
+      const orderIsValid = parseInt(order.validTo, 10) * 1000 > new Date().getTime()
 
       if (orderIsValid) {
         console.log(`Placing Order: ${order}`);
@@ -43,23 +41,8 @@ export const checkForAndPlaceOrder: ActionFn = async (
       }
     } catch (e: any) {
       console.log(`Not tradeable (${e})`);
-      if (e.code === "CALL_EXCEPTION") {
-        contractsToDelete.push(contract_address)
-      }
     }
   }
-
-  for (const contract_address of contractsToDelete) {
-    const contractIndex = registry.contracts.findIndex((existing: string) => existing == contract_address);
-    if (contractIndex >= 0) {
-      registry.contracts.splice(contractIndex, 1);
-      console.log(`Removing contract ${contract_address}`);
-    }
-  }
-  if(contractsToDelete.length > 0) {
-    registry.write();
-  }
-
 };
 
 async function placeOrder(order: any, api_url: string) {
@@ -118,7 +101,7 @@ function orderKind(order: any): OrderKind {
   throw "Unexpected order kind";
 }
 
-class ChainContext {
+export class ChainContext {
   provider: ethers.providers.Provider;
   api_url: string;
 

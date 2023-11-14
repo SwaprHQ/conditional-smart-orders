@@ -6,7 +6,7 @@ import {
 } from "@tenderly/actions";
 
 import { ethers } from "ethers";
-import { abi } from "./artifacts/ConditionalOrder.json";
+import { abi } from "./artifacts/DCAOrder.json"
 import { Registry } from "./registry";
 
 export const addContract: ActionFn = async (context: Context, event: Event) => {
