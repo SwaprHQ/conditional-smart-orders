@@ -2,7 +2,7 @@ import { ActionFn, BlockEvent, Context, Event } from "@tenderly/actions";
 
 import axios from "axios";
 import { OrderKind } from "@cowprotocol/contracts";
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import { abi } from "./artifacts/DCAOrder.json"
 import { Registry } from "./registry";
 
@@ -46,6 +46,9 @@ export const checkForAndPlaceOrder: ActionFn = async (
 };
 
 async function placeOrder(order: any, api_url: string) {
+  
+  const sellAmount = BigNumber.from(order.sellAmount).add(BigNumber.from(order.feeAmount)).toString()
+
   try {
     const { data } = await axios.post(
       `${api_url}/api/v1/orders`,
@@ -53,11 +56,11 @@ async function placeOrder(order: any, api_url: string) {
         sellToken: order.sellToken,
         buyToken: order.buyToken,
         receiver: order.receiver,
-        sellAmount: order.sellAmount.toString(),
+        sellAmount: sellAmount,
         buyAmount: order.buyAmount.toString(),
         validTo: order.validTo,
         appData: order.appData,
-        feeAmount: order.feeAmount.toString(),
+        feeAmount: "0",
         kind: orderKind(order),
         partiallyFillable: order.partiallyFillable,
         signature: order.signature,
