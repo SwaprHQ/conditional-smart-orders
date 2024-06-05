@@ -1,6 +1,6 @@
 account_id: ""
 actions:
-  Swapr/swapr:
+  swapr/swapr:
     runtime: v1
     sources: actions
     specs:
@@ -8,38 +8,42 @@ actions:
         description: Listens to events that index new instances of smart order contracts
         function: register:addContract
         trigger:
-          type: transaction
           transaction:
+            filters:
+              - logEmitted:
+                  startsWith:
+                    # `ConditionalOrderCreated(address)`
+                    - 0x348a1454f658b360fcb291e66a7adc4a65b64b38b956802a976d5e460d0e2084
+                network:
+                  - 1
+                  - 100
+                  - 42161
+                status: success
             status:
               - mined
-            filters:
-              # ConditionalOrderCreated
-              - network: 
-                - 1
-                - 100
-                status: success
-                logEmitted:
-                  startsWith: 
-                  - 0x348a1454f658b360fcb291e66a7adc4a65b64b38b956802a976d5e460d0e2084
+          type: transaction
       watch_orders:
-        description: Checks on every block if the registered smart order contract wants to trade
+        description:
+          Checks on every block if the registered smart order contract
+          wants to trade
         function: watch:checkForAndPlaceOrder
         trigger:
           type: block
           block:
+            blocks: 15
             network:
               - 1
               - 100
-            blocks: 5
-            watch_orders:
+              - 42161
       unregister_orders:
         description: Checks on every block if the registered smart order contract has finished
         function: unregister:removeContract
         trigger:
           type: block
           block:
+            blocks: 25
             network:
               - 1
               - 100
-            blocks: 10
+              - 42161
 project_slug: ""

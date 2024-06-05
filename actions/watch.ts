@@ -3,7 +3,7 @@ import { ActionFn, BlockEvent, Context, Event } from "@tenderly/actions";
 import axios from "axios";
 import { OrderKind } from "@cowprotocol/contracts";
 import { BigNumber, ethers } from "ethers";
-import { abi } from "./artifacts/DCAOrder.json"
+import { abi } from "./artifacts/DCAOrder.json";
 import { Registry } from "./registry";
 
 export const checkForAndPlaceOrder: ActionFn = async (
@@ -28,7 +28,8 @@ export const checkForAndPlaceOrder: ActionFn = async (
         [Array.from(order)]
       );
 
-      const orderIsValid = parseInt(order.validTo, 10) * 1000 > new Date().getTime()
+      const orderIsValid =
+        parseInt(order.validTo, 10) * 1000 > new Date().getTime();
 
       if (orderIsValid) {
         console.log(`Placing Order: ${order}`);
@@ -36,8 +37,10 @@ export const checkForAndPlaceOrder: ActionFn = async (
           { ...order, from: contract_address, signature },
           chainContext.api_url
         );
-      } else {        
-        console.log(`Invalid order: validTo (${order.validTo}) is in the past `)
+      } else {
+        console.log(
+          `Invalid order: validTo (${order.validTo}) is in the past `
+        );
       }
     } catch (e: any) {
       console.log(`Not tradeable (${e})`);
@@ -46,8 +49,9 @@ export const checkForAndPlaceOrder: ActionFn = async (
 };
 
 async function placeOrder(order: any, api_url: string) {
-  
-  const sellAmount = BigNumber.from(order.sellAmount).add(BigNumber.from(order.feeAmount)).toString()
+  const sellAmount = BigNumber.from(order.sellAmount)
+    .add(BigNumber.from(order.feeAmount))
+    .toString();
 
   try {
     const { data } = await axios.post(
@@ -131,6 +135,8 @@ function apiUrl(network: string): string {
       return "https://api.cow.fi/goerli";
     case "100":
       return "https://api.cow.fi/xdai";
+    case "42161":
+      return "https://api.cow.fi/arbitrum_one";
     default:
       throw "Unsupported network";
   }
