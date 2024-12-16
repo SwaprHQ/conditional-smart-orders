@@ -137,6 +137,8 @@ function apiUrl(network: string): string {
       return "https://api.cow.fi/xdai";
     case "42161":
       return "https://api.cow.fi/arbitrum_one";
+    case "8453":
+      return "https://api.cow.fi/base";
     default:
       throw "Unsupported network";
   }
